@@ -1,7 +1,7 @@
-﻿using Oracle.VectorData;
-using Oracle.ManagedDataAccess.Client;
-using Microsoft.Extensions.VectorData;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.VectorData;
+using Oracle.ManagedDataAccess.Client;
+using Oracle.VectorData;
 using System.Text.Json;
 
 namespace OracleAIVectorData;
@@ -35,6 +35,7 @@ public class AIHotelSearchApp
             .Build();
 
         string? connStr = configuration.GetSection("Oracle")["ConnectionString"];
+
         OracleDataSource? ds = null;
         OracleVectorStore? vs = null;
         OracleCollection<int, Hotel>? collection = null;
@@ -66,7 +67,8 @@ public class AIHotelSearchApp
             await collection.EnsureCollectionExistsAsync();
 
             // Upsert the records into the database.
-            await collection.UpsertAsync(hotels);
+            foreach (var hotel in hotels)
+                await collection.UpsertAsync(hotel);
 
             // Search hotels in the vector collection by primary key.
             Console.WriteLine("Search for hotels with ID 5 and 10.");
@@ -78,16 +80,16 @@ public class AIHotelSearchApp
             }
             Console.WriteLine();
 
-            // Search hotels by their characteristics, such as rating and parking availability.
-            Console.WriteLine("Search for hotels with a 9 or higher rating and parking.");
+            // Search hotels by their characteristics, such as rating.
+            Console.WriteLine("Search for hotels with a 9 or higher rating.");
             Console.WriteLine("===============================================================================");
-            IAsyncEnumerable<Hotel> hotelsByFilter2 = collection.GetAsync(r => r.Rating >= 9 && r.HasParking == true, 3);
-            await foreach (Hotel hotel in hotelsByFilter2)
+            IAsyncEnumerable<Hotel> hotelsByFilter = collection.GetAsync(r => r.Rating >= 9, 3);
+            await foreach (Hotel hotel in hotelsByFilter)
             {
                 Output(hotel);
             }
             Console.WriteLine();
-
+ 
             // Search hotels by their names. Return top three most similar matches.
             // Provide a search term, such as "beach". Generate a vector embedding using the search term.
             // ODP.NET performs a similarity search using the hotel name and search term embeddings.
@@ -171,8 +173,8 @@ public class AIHotelSearchApp
         Console.WriteLine($"HasParking = {hotel.HasParking}");
         Console.WriteLine();
     }
-}
-/* Copyright (c) 2025 Oracle and/or its affiliates. All rights reserved. */
+} 
+/* Copyright (c) 2026 Oracle and/or its affiliates. All rights reserved. */
 
 /******************************************************************************
  *
